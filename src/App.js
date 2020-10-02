@@ -1,6 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import * as actions from './store/actions/index';
+
 import './App.css';
+import Spinner from './components/Spinner/Spinner';
 
 import { 
   AutoSizer,
@@ -11,28 +14,28 @@ import {
  } from 'react-virtualized';
 
 function App(props) {
+  const items = useSelector(state => state.app.data);
+  const loading = useSelector(state => state.app.loading);
+  const error = useSelector(state => state.app.error);
+
+  const dispatch = useDispatch();
+
   const _cache = new CellMeasurerCache({
     fixedWidth: true,
     defaultHeight: 50,
     minHeight: 40
   });
-  const [items, setItems] = useState([])
+  // const [items, setItems] = useState([])
   let _lastRenderedWidth = props.width;
-  let width = props.width;
 
   useEffect(() => {
-    (async () => {
-      const result = await axios.get("http://localhost:8080/data");
-      setItems(result.data);
-    })();
+    dispatch(actions.getData())
+  }, []);
 
-
-    if (_lastRenderedWidth !== props.width) {
-      _lastRenderedWidth = props.width;
-      _cache.clearAll();
-    }
-
-  }, [width]);
+  if (_lastRenderedWidth !== props.width) {
+    _lastRenderedWidth = props.width;
+    _cache.clearAll();
+  }
 
   const _columnCellRenderer = ({ dataKey, parent, rowIndex }) => {
     const datum = items[rowIndex % items.length];
@@ -55,7 +58,9 @@ function App(props) {
   };
 
   return (
-    <div className="App" style={{width: "100%", height: "100vh"}}>
+    <div className="App" style={{width: window.innerWidth -25, height: "100vh"}}>
+      { loading && <Spinner/>}
+      { error && alert("Something went wrong")}
       <AutoSizer>
         {({height, width}) => (
             <Table
